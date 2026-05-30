@@ -1,4 +1,5 @@
 import fastify from 'fastify'
+import { readFileSync } from 'node:fs'
 import { ZodError } from 'zod'
 import { env } from '@/env'
 import { appRoutes } from './http/routes'
@@ -14,13 +15,23 @@ import {
 import fastifyCookie from '@fastify/cookie'
 import * as Sentry from '@sentry/node'
 
-Sentry.init({
-  dsn: env.SENTRY_DSN,
-  environment: env.NODE_ENV,
-  tracesSampleRate: 1.0,
-})
+// Sentry.init({
+//   dsn: env.SENTRY_DSN,
+//   environment: env.NODE_ENV,
+//   tracesSampleRate: 1.0,
+// })
 
-export const app = fastify().withTypeProvider<ZodTypeProvider>()
+const fastifyOpts = env.HTTPS_ENABLED
+  ? {
+      https: {
+        key: readFileSync(env.SSL_KEY_PATH),
+        cert: readFileSync(env.SSL_CERT_PATH),
+      },
+    }
+  : {}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const app = fastify(fastifyOpts as any).withTypeProvider<ZodTypeProvider>()
 
 app.setSerializerCompiler(serializerCompiler)
 app.setValidatorCompiler(validatorCompiler)
